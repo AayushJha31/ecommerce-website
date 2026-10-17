@@ -1,0 +1,106 @@
+{% extends 'base/base.html' %}
+
+{% block content %}
+{% if product %}
+		<div class="container mt-5 pt-5">
+			<!-- ============================ COMPONENT 1 ================================= -->
+			<div class="card">
+				<div class="row no-gutters">
+					<aside class="col-md-6">
+			<article class="gallery-wrap"> 
+			<div class="img-big-wrap">
+			  <div> <a href="#"><img src="{{ product.product_images.first.image.url }}"></a></div>
+			</div> <!-- slider-product.// -->
+			<div class="thumbs-wrap">
+				{% for image in product.product_images.all %}
+			  <a href="#" class="item-thumb"> <img src="/media/{{ image.image }}"></a>
+				{% endfor %}
+			</div> <!-- slider-nav.// -->
+			</article> <!-- gallery-wrap .end// -->
+					</aside>
+					<main class="col-md-6 border-left">
+			<article class="content-body">
+			
+			<h2 class="title">{{ product.product_name }}</h2>
+			
+			<div class="rating-wrap my-3">
+				<ul class="rating-stars">
+					<li style="width:80%" class="stars-active"> 
+						<i class="fa fa-star"></i> <i class="fa fa-star"></i> 
+						<i class="fa fa-star"></i> <i class="fa fa-star"></i> 
+						<i class="fa fa-star"></i> 
+					</li>
+					<li>
+						<i class="fa fa-star"></i> <i class="fa fa-star"></i> 
+						<i class="fa fa-star"></i> <i class="fa fa-star"></i> 
+						<i class="fa fa-star"></i> 
+					</li>
+				</ul>
+				<small class="label-rating text-muted">132 reviews</small>
+				<small class="label-rating text-success"> <i class="fa fa-clipboard-check"></i> 154 orders </small>
+			</div> <!-- rating-wrap.// -->
+			
+			<div class="mb-3"> 
+				<var class="price h4">$
+					{% if updated_price %}
+						{{ updated_price }}
+					{% else %}
+						{{ product.price }}
+					{% endif %}
+					</var> 
+				<span class="text-muted">/per kg</span> 
+			</div> <!-- price-detail-wrap .// -->
+			
+			<p>{{ product.product_description }}</p>
+			
+			
+			<dl class="row">
+			  <dt class="col-sm-3">Model#</dt>
+			  <dd class="col-sm-9">Odsy-1000</dd>
+			
+			  <dt class="col-sm-3">Color</dt>
+			  <dd class="col-sm-9">{{ product.color_variant.first.color_name }}</dd>
+			
+			  <dt class="col-sm-3">Delivery</dt>
+			  <dd class="col-sm-9">Russia, USA, and Europe </dd>
+			</dl>
+			
+			<hr>
+				<form method="post" action="{% url 'add_to_cart' product.slug %}" class="d-flex flex-wrap align-items-end">
+					{% csrf_token %}
+					<div class="form-group mb-0 mr-2">
+						<label for="cart-quantity">Quantity</label>
+						<input id="cart-quantity" name="quantity" type="number" min="1" value="1"
+							class="form-control" style="width: 90px;" required>
+					</div>
+					{% if product.size_variant.exists %}
+					<div class="form-group mb-0 mr-2">
+						<label for="cart-size">Size</label>
+						<select id="cart-size" name="size" class="form-control" required>
+							<option value="">Choose a size</option>
+							{% for size in product.size_variant.all %}
+							<option value="{{ size.pk }}" {% if selected_size_id == size.pk %}selected{% endif %}>
+								{{ size.size_name }}
+							</option>
+							{% endfor %}
+						</select>
+					</div>
+					{% endif %}
+					<button type="submit" class="btn btn-outline-primary">
+						<span class="text">Add to cart</span> <i class="fas fa-shopping-cart"></i>
+					</button>
+				</form>
+			</article> <!-- product-info-aside .// -->
+					</main> <!-- col.// -->
+				</div> <!-- row.// -->
+			</div> <!-- card.// -->
+			<!-- ============================ COMPONENT 1 END .// ================================= -->
+{% else %}
+		<div class="container mt-5 pt-5">
+			<h2>Product not found</h2>
+		</div>
+{% endif %}
+		
+			</div>
+			</section>
+{% endblock %}

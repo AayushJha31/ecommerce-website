@@ -1,0 +1,105 @@
+{% extends 'base/base.html' %}
+
+{% block content %}
+<main class="container mt-5 pt-3 mb-5">
+	<div class="row justify-content-center">
+		<div class="col-md-7 col-lg-5">
+			<div class="card">
+				<div class="card-body text-center p-4">
+					<h1 class="h3">Secure checkout</h1>
+					<p class="text-muted">Complete your card payment securely with Razorpay.</p>
+					<div class="d-flex justify-content-between border-top pt-3 mb-3">
+						<span>Total (USD)</span>
+						<strong>${{ total }}</strong>
+					</div>
+					<form id="checkout-form">
+						{% csrf_token %}
+						<button id="pay-button" type="submit" class="btn btn-primary btn-block">
+							Continue to payment
+						</button>
+					</form>
+					<p id="payment-error" class="alert alert-danger mt-3 mb-0 d-none" role="alert"></p>
+					<a href="{% url 'cart' %}" class="btn btn-link mt-2">Return to cart</a>
+				</div>
+			</div>
+		</div>
+	</div>
+</main>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+	(function () {
+		const form = document.getElementById('checkout-form');
+		const button = document.getElementById('pay-button');
+		const errorBox = document.getElementById('payment-error');
+		const csrfToken = form.querySelector('[name=csrfmiddlewaretoken]').value;
+
+		form.addEventListener('submit', function (event) {
+			event.preventDefault();
+			button.disabled = true;
+			errorBox.classList.add('d-none');
+
+			if (typeof Razorpay === 'undefined') {
+				errorBox.textContent = 'The secure payment form could not be loaded. Please try again.';
+				errorBox.classList.remove('d-none');
+				button.disabled = false;
+				return;
+			}
+
+			const checkout = new Razorpay({
+				key: '{{ razorpay_key_id|escapejs }}',
+				amount: '{{ amount }}',
+				currency: 'USD',
+				name: 'Ecomm Store',
+				description: 'Your shopping cart',
+				order_id: '{{ razorpay_order_id|escapejs }}',
+				handler: function (response) {
+					const body = new URLSearchParams({
+						razorpay_order_id: response.razorpay_order_id,
+						razorpay_payment_id: response.razorpay_payment_id,
+						razorpay_signature: response.razorpay_signature
+					});
+
+					fetch('{% url "verify_payment" %}', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+							'X-CSRFToken': csrfToken
+						},
+						body: body
+					})
+						.then(function (result) {
+							return result.json().then(function (data) {
+								if (!result.ok) {
+									throw new Error(data.error || 'Payment verification failed.');
+								}
+								return data;
+							});
+						})
+						.then(function (data) {
+							window.location.assign(data.redirect_url);
+						})
+						.catch(function (error) {
+							errorBox.textContent = error.message;
+							errorBox.classList.remove('d-none');
+							button.disabled = false;
+						});
+				},
+				modal: {
+					ondismiss: function () {
+						button.disabled = false;
+					}
+				},
+				theme: { color: '#3167eb' }
+			});
+			checkout.on('payment.failed', function (response) {
+				errorBox.textContent =
+					response.error.description || 'The payment could not be completed.';
+				errorBox.classList.remove('d-none');
+				button.disabled = false;
+			});
+			checkout.open();
+		});
+	})();
+</script>
+{% endblock %}
